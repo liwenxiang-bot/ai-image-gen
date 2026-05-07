@@ -44,7 +44,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
   ({ onGenerate, isLoading }, ref) => {
     const [mode, setMode] = useState<GenerationMode>("text-to-image");
     const [prompt, setPrompt] = useState("");
-    const [image, setImage] = useState<string | null>(null);
+    const [images, setImages] = useState<string[]>([]);
     const [size, setSize] = useState<ImageSize>("1024x1024");
     const [quality, setQuality] = useState<ImageQuality>("auto");
     const [ideas, setIdeas] = useState(() => ALL_PROMPT_IDEAS.slice(0, DISPLAY_COUNT));
@@ -82,7 +82,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
     useImperativeHandle(ref, () => ({
       setEditImage(imageBase64: string, promptText: string) {
         setMode("image-to-image");
-        setImage(imageBase64);
+        setImages([imageBase64]);
         setPrompt(promptText);
       },
     }));
@@ -94,7 +94,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
 
     const canSubmit =
       prompt.trim().length > 0 &&
-      (mode === "text-to-image" || image !== null) &&
+      (mode === "text-to-image" || images.length > 0) &&
       !isLoading;
 
     const handleSubmit = () => {
@@ -102,7 +102,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
       onGenerate({
         prompt: prompt.trim(),
         mode,
-        image: image ?? undefined,
+        images: mode === "image-to-image" ? images : undefined,
         size,
         quality,
       });
@@ -166,7 +166,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
           )}
 
           {mode === "image-to-image" && (
-            <ImageUpload image={image} onImageChange={setImage} disabled={isLoading} />
+            <ImageUpload images={images} onImagesChange={setImages} disabled={isLoading} />
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MAX_IMAGES } from "@/lib/types";
 
 export const maxDuration = 120;
 
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { prompt, mode, image, size, quality } = body;
+    const { prompt, mode, images, size, quality } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -27,9 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const imageList: string[] = Array.isArray(images)
+      ? images.filter((s): s is string => typeof s === "string" && s.length > 0).slice(0, MAX_IMAGES)
+      : [];
+
     let apiResponse: Response;
 
-    if (mode === "image-to-image" && image) {
+    if (mode === "image-to-image" && imageList.length > 0) {
       // Image-to-image: use /v1/images/edits with multipart/form-data
       const formData = new FormData();
       formData.append("model", "gpt-image-2");
@@ -38,14 +43,15 @@ export async function POST(request: NextRequest) {
       if (size && size !== "auto") formData.append("size", size);
       if (quality) formData.append("quality", quality);
 
-      // Convert base64 to Blob
-      const binaryStr = atob(image);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: "image/png" });
-      formData.append("image[]", blob, "image.png");
+      imageList.forEach((b64, idx) => {
+        const binaryStr = atob(b64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "image/png" });
+        formData.append("image[]", blob, `image-${idx}.png`);
+      });
 
       apiResponse = await fetch(`${baseUrl}/v1/images/edits`, {
         method: "POST",

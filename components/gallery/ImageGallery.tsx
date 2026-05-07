@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ImageIcon, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ImageIcon, Trash2, AlertTriangle } from "lucide-react";
 import ImageCard from "./ImageCard";
 import ImageModal from "./ImageModal";
 import Button from "@/components/ui/Button";
@@ -17,6 +17,16 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ history, isLoading, onDelete, onClear, onEdit }: ImageGalleryProps) {
   const [preview, setPreview] = useState<HistoryItem | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  useEffect(() => {
+    if (!confirmClear) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setConfirmClear(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [confirmClear]);
 
   if (history.length === 0 && !isLoading) {
     return (
@@ -34,7 +44,7 @@ export default function ImageGallery({ history, isLoading, onDelete, onClear, on
         <h2 className="text-sm font-medium text-muted-foreground">
           历史记录 ({history.length})
         </h2>
-        <Button variant="ghost" size="sm" onClick={onClear}>
+        <Button variant="ghost" size="sm" onClick={() => setConfirmClear(true)}>
           <Trash2 className="h-3.5 w-3.5" />
           清空
         </Button>
@@ -62,6 +72,46 @@ export default function ImageGallery({ history, isLoading, onDelete, onClear, on
           onClose={() => setPreview(null)}
           onEdit={(item) => { setPreview(null); onEdit(item); }}
         />
+      )}
+
+      {confirmClear && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setConfirmClear(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-background p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-red-500/10 p-2 text-red-500 shrink-0">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium">清空所有历史记录？</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  将删除全部 {history.length} 张已生成的图片，此操作无法撤销。
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmClear(false)}>
+                取消
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  onClear();
+                  setConfirmClear(false);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                确认清空
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

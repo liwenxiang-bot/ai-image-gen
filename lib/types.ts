@@ -7,10 +7,12 @@ export type ImageQuality = "low" | "medium" | "high" | "auto";
 export interface GenerationParams {
   prompt: string;
   mode: GenerationMode;
-  image?: string; // base64 encoded image for image-to-image
+  images?: string[];
   size: ImageSize;
   quality: ImageQuality;
 }
+
+export const MAX_IMAGES = 4;
 
 export interface GenerationResult {
   success: true;
