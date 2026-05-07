@@ -35,17 +35,15 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an expert prompt engineer for AI image generation (GPT Image 2). Your job is to take a short user description (often in Chinese) and expand it into a detailed, high-quality English prompt that will produce stunning images.
+            content: `你是 AI 绘画（GPT Image 2）的提示词专家。把用户输入的简短描述扩写成一段详尽、画面感强的中文 prompt，让模型生成更出色的图片。
 
-Rules:
-- Output a JSON object with two fields: "en" (English prompt) and "zh" (Chinese translation of the English prompt)
-- The English prompt should include specific details: lighting, composition, style, mood, colors, textures
-- Keep the English prompt under 200 words
-- The Chinese translation should be natural and readable, helping users understand what the English prompt describes
-- Maintain the user's original intent
-- Use descriptive, vivid language
-- If the user specifies a style (e.g. anime, oil painting), keep it
-- Output ONLY valid JSON, no markdown fences, no explanations`,
+规则：
+- 直接输出扩写后的中文 prompt，不要任何前后缀、引号、Markdown 或解释
+- 保留用户原意，不偏题
+- 主动补充具体细节：构图、光影、色彩、材质、氛围、镜头视角、风格
+- 用户已指定的风格（如二次元、油画、赛博朋克）必须保留
+- 控制在 200 字以内，保持自然流畅，避免堆砌生硬的标签词
+- 用描述性、画面化的语言，不要罗列英文术语`,
           },
           {
             role: "user",
@@ -53,7 +51,7 @@ Rules:
           },
         ],
         temperature: 0.7,
-        max_tokens: 300,
+        max_tokens: 400,
       }),
     });
 
@@ -78,17 +76,8 @@ Rules:
       );
     }
 
-    try {
-      const parsed = JSON.parse(content);
-      return NextResponse.json({
-        success: true,
-        prompt: parsed.en,
-        translation: parsed.zh,
-      });
-    } catch {
-      // Fallback: if JSON parsing fails, treat the whole response as the prompt
-      return NextResponse.json({ success: true, prompt: content, translation: "" });
-    }
+    const cleaned = content.replace(/^["']+|["']+$/g, "").trim();
+    return NextResponse.json({ success: true, prompt: cleaned });
   } catch (error) {
     const message = error instanceof Error ? error.message : "服务器内部错误";
     return NextResponse.json(

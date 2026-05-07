@@ -53,14 +53,12 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
       setIdeas(shuffleAndPick(ALL_PROMPT_IDEAS, DISPLAY_COUNT));
     }, []);
     const [isEnhancing, setIsEnhancing] = useState(false);
-    const [translation, setTranslation] = useState("");
 
     const refreshIdeas = () => setIdeas(shuffleAndPick(ALL_PROMPT_IDEAS, DISPLAY_COUNT));
 
     const handleEnhance = async () => {
       if (!prompt.trim() || isEnhancing) return;
       setIsEnhancing(true);
-      setTranslation("");
       try {
         const res = await fetch("/api/enhance-prompt", {
           method: "POST",
@@ -70,7 +68,6 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
         const data = await res.json();
         if (data.success && data.prompt) {
           setPrompt(data.prompt);
-          if (data.translation) setTranslation(data.translation);
         }
       } catch {
         // silently fail, user can retry
@@ -122,21 +119,12 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
 
           <PromptInput
             value={prompt}
-            onChange={(v) => {
-              setPrompt(v);
-              if (translation) setTranslation("");
-            }}
+            onChange={setPrompt}
             disabled={isLoading}
             onEnhance={handleEnhance}
             isEnhancing={isEnhancing}
           />
           <p className="-mt-2 text-[10px] text-muted-foreground text-right hidden sm:block">{isMac ? "⌘" : "Ctrl"}+Enter 快速生成</p>
-
-          {translation && (
-            <div className="rounded-lg bg-accent/5 border border-accent/10 px-3 py-2 text-xs text-muted-foreground">
-              <span className="font-medium text-accent">中文释义：</span>{translation}
-            </div>
-          )}
 
           {!prompt && mode === "text-to-image" && (
             <div className="flex flex-col gap-2">
