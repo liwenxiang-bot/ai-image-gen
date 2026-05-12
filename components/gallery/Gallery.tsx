@@ -110,9 +110,12 @@ export default function Gallery({ limit }: GalleryProps) {
             <img
               src={it.imageUrl}
               alt={it.prompt}
-              className="block w-full h-auto"
+              className="block w-full h-auto opacity-0 transition-opacity duration-300"
               loading="lazy"
               crossOrigin="anonymous"
+              onLoad={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
             />
             <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex w-full items-center gap-2">
@@ -159,7 +162,7 @@ export default function Gallery({ limit }: GalleryProps) {
         </div>
       )}
 
-      {!previewMode && !hasMore && displayed.length > 0 && (
+      {!previewMode && !hasMore && !loading && displayed.length > 0 && (
         <div className="py-8 text-center text-xs text-foreground/40">
           已经到底啦 · 共 {displayed.length} 件作品
         </div>
