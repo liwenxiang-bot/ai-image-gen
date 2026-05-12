@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+  runtime  = "nodejs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  openid    String   @unique @db.VarChar(64)
+  nickname  String?  @db.VarChar(64)
+  createdAt DateTime @default(now())
+  images    Image[]
+  jobs      Job[]
+
+  @@map("users")
+}
+
+model Image {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ossKey        String   @db.VarChar(255)
+  prompt        String   @db.Text
+  revisedPrompt String?  @db.Text
+  mode          String   @db.VarChar(32)
+  size          String   @db.VarChar(16)
+  quality       String   @db.VarChar(16)
+  isPublic      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
+  @@map("images")
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String    @db.VarChar(16) // queued / running / done / failed / cancelled
+  prompt       String    @db.Text
+  mode         String    @db.VarChar(32)
+  size         String    @db.VarChar(16)
+  quality      String    @db.VarChar(16)
+  inputKeys    Json?
+  imageId      String?
+  errorMessage String?   @db.Text
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("jobs")
+}

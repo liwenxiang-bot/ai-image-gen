@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  const user = await requireAuth();
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: "未登录" },
+      { status: 401 }
+    );
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com").replace(
     /\/+$/,
