@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   X,
   Download,
@@ -36,6 +36,7 @@ export default function ImageModal({
   const item = items[index];
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
+  const touchStartX = useRef<number | null>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -45,6 +46,18 @@ export default function ImageModal({
     },
     [onClose, onIndexChange, hasPrev, hasNext, index],
   );
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 50) return;
+    if (delta > 0 && hasPrev) onIndexChange(index - 1);
+    else if (delta < 0 && hasNext) onIndexChange(index + 1);
+  };
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);
@@ -92,6 +105,8 @@ export default function ImageModal({
       <div
         className="relative flex w-full max-w-5xl items-center gap-3 md:gap-4"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
       >
         <NavArrow
           dir="prev"

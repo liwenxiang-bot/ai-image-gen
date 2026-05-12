@@ -203,6 +203,7 @@ function PreviewModal({
 }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const item = items[index];
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
@@ -225,6 +226,18 @@ function PreviewModal({
   useEffect(() => {
     setCopied(false);
   }, [index]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < 50) return;
+    if (delta > 0 && hasPrev) onIndexChange(index - 1);
+    else if (delta < 0 && hasNext) onIndexChange(index + 1);
+  };
 
   const handleCopy = async () => {
     try {
@@ -274,6 +287,8 @@ function PreviewModal({
       <div
         className="flex flex-1 items-center justify-center gap-3 px-4 py-6 md:px-10"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
       >
         <NavArrow
           dir="prev"
@@ -288,8 +303,9 @@ function PreviewModal({
             key={item.id}
             src={item.imageUrl}
             alt={item.prompt}
-            className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl animate-fade-in"
+            className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl animate-fade-in select-none"
             crossOrigin="anonymous"
+            draggable={false}
           />
         </div>
 
