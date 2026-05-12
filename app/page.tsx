@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -18,17 +18,6 @@ export default function Home() {
   const galleryRef = useRef<HTMLDivElement>(null);
   const { jobs, submitJob, retryJob, cancelJob, onCompleted, onFailed } = useJobs();
   const { history, removeItem, setItemVisibility, reload: reloadHistory } = useHistory();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const fromGallery = searchParams.get("prompt");
-    if (fromGallery) {
-      panelRef.current?.setPrompt(fromGallery);
-      const url = new URL(window.location.href);
-      url.searchParams.delete("prompt");
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, [searchParams]);
 
   // When a job finishes, reload history once and notify the user.
   useEffect(() => {
@@ -95,6 +84,10 @@ export default function Home() {
       <Header />
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-8">
+          <Suspense fallback={null}>
+            <PromptFromQuery panelRef={panelRef} />
+          </Suspense>
+
           <div className="mb-12">
             <GenerationPanel ref={panelRef} onGenerate={handleGenerate} isLoading={false} />
           </div>
@@ -124,6 +117,31 @@ export default function Home() {
       <ToastContainer />
     </>
   );
+}
+
+/**
+ * Reads `?prompt=` from the URL and fills the prompt input on mount, then
+ * cleans the URL. Isolated inside a Suspense boundary because `useSearchParams`
+ * triggers a CSR bailout that would otherwise fail the production build.
+ */
+function PromptFromQuery({
+  panelRef,
+}: {
+  panelRef: React.RefObject<GenerationPanelHandle | null>;
+}) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const fromGallery = searchParams.get("prompt");
+    if (fromGallery) {
+      panelRef.current?.setPrompt(fromGallery);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("prompt");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams, panelRef]);
+
+  return null;
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
