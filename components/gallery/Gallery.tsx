@@ -26,6 +26,13 @@ type GalleryItem = {
   authorSeed: string;
 };
 
+/** Parse "1024x1536" → "1024 / 1536"; fallback to 1 for "auto" / unknown */
+function parseAspectRatio(size: string): string {
+  const m = /^(\d+)x(\d+)$/.exec(size);
+  if (!m) return "1 / 1";
+  return `${m[1]} / ${m[2]}`;
+}
+
 interface GalleryProps {
   /** preview 模式：固定取前 N 张 + "探索更多 →" 链接，不开无限滚动 */
   limit?: number;
@@ -98,38 +105,41 @@ export default function Gallery({ limit }: GalleryProps) {
       )}
 
       <div className="columns-2 gap-3 sm:columns-3 md:gap-4 lg:columns-4 [&>*]:mb-3 md:[&>*]:mb-4">
-        {displayed.map((it, i) => (
-          <button
-            key={it.id}
-            type="button"
-            onClick={() => setPreviewIndex(i)}
-            className="group relative block w-full overflow-hidden rounded-xl border border-border bg-muted text-left transition-all hover:shadow-xl hover:scale-[1.015] animate-fade-in break-inside-avoid"
-            style={{ animationDelay: `${(i % 12) * 30}ms` }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={it.imageUrl}
-              alt={it.prompt}
-              className="block w-full h-auto opacity-0 transition-opacity duration-300"
-              loading="lazy"
-              crossOrigin="anonymous"
-              onLoad={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            />
-            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
-              <div className="flex w-full items-center gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={avatarUrl(it.authorSeed, 32)}
-                  alt={it.author}
-                  className="h-5 w-5 shrink-0 rounded-full bg-white/30"
-                />
-                <span className="truncate text-[11px] text-white/90">{it.author}</span>
+        {displayed.map((it, i) => {
+          const ar = parseAspectRatio(it.size);
+          return (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => setPreviewIndex(i)}
+              className="group relative block w-full overflow-hidden rounded-xl border border-border bg-muted text-left transition-all hover:shadow-xl hover:scale-[1.015] animate-fade-in break-inside-avoid"
+              style={{ animationDelay: `${(i % 12) * 30}ms`, aspectRatio: ar }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={it.imageUrl}
+                alt={it.prompt}
+                className="block h-full w-full object-cover opacity-0 transition-opacity duration-300"
+                loading="lazy"
+                crossOrigin="anonymous"
+                onLoad={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                }}
+              />
+              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex w-full items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={avatarUrl(it.authorSeed, 32)}
+                    alt={it.author}
+                    className="h-5 w-5 shrink-0 rounded-full bg-white/30"
+                  />
+                  <span className="truncate text-[11px] text-white/90">{it.author}</span>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
 
         {loading && displayed.length === 0 &&
           Array.from({ length: previewMode ? (limit as number) : 12 }).map((_, i) => (
