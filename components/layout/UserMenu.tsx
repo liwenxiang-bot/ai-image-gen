@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LogOut, User } from "lucide-react";
+import { avatarUrl } from "@/lib/avatar";
 
 type Me = { id: string; openid: string; nickname: string | null } | null;
 
@@ -44,33 +45,62 @@ export default function UserMenu() {
 
   if (loading || !me) return null;
 
+  const displayName = me.nickname || `用户${me.openid.slice(-6)}`;
+
   return (
     <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-foreground/70 transition-colors hover:bg-border hover:text-foreground"
+        className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted text-foreground/70 ring-1 ring-transparent transition-all hover:ring-border"
         aria-label="账户菜单"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <User className="h-4 w-4" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatarUrl(me.openid, 64)}
+          alt={displayName}
+          className="h-full w-full object-cover"
+        />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-40 overflow-hidden rounded-xl border border-border bg-background shadow-lg"
+          className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-background shadow-xl shadow-black/5"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={logout}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            退出登录
-          </button>
+          {/* 身份块 */}
+          <div className="flex items-center gap-3 border-b border-border/60 px-3 py-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarUrl(me.openid, 80)}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full bg-muted ring-1 ring-border/60"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-foreground">
+                {displayName}
+              </div>
+              <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-muted/70 px-1.5 py-0.5 text-[10px] text-foreground/55">
+                <User className="h-2.5 w-2.5" />
+                微信登录
+              </div>
+            </div>
+          </div>
+
+          {/* 操作区 */}
+          <div className="p-1">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={logout}
+              className="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-foreground/75 transition-colors hover:bg-red-500/10 hover:text-red-600"
+            >
+              <LogOut className="h-4 w-4 text-foreground/55 transition-colors group-hover:text-red-500" />
+              退出登录
+            </button>
+          </div>
         </div>
       )}
     </div>
