@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
+import { createJob, listActiveJobs, toPayload } from "@/lib/jobs";
+import { enqueueGenerate } from "@/lib/queue";
+
+export const runtime = "nodejs";
+
+const MAX_INPUTS = 4;
+
+export async function POST(request: NextRequest) {
+  const user = await requireAuth();
+  if (!user) {
+    return NextResponse.json({ error: "未登录" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "请求体无效" }, { status: 400 });
+  }
+
+  const b = body as {
+    prompt?: unknown;
+    mode?: unknown;
+    inputKeys?: unknown;
+    size?: unknown;
+    quality?: unknown;
+  };
+
+  const prompt = typeof b.prompt === "string" ? b.prompt.trim() : "";
+  if (!prompt) {
+    return NextResponse.json({ error: "请输入提示词" }, { status: 400 });
+  }
+
+  const mode = b.mode === "image-to-image" ? "image-to-image" : "text-to-image";
+  const size = typeof b.size === "string" ? b.size : "auto";
+  const quality = typeof b.quality === "string" ? b.quality : "auto";
+
+  const inputKeys = Array.isArray(b.inputKeys)
+    ? (b.inputKeys.filter((s): s is string => typeof s === "string" && s.length > 0).slice(0, MAX_INPUTS))
+    : [];
+
+  const job = await createJob({
+    userId: user.id,
+    prompt,
+    mode,
+    size,
+    quality,
+    inputKeys,
+  });
+
+  await enqueueGenerate(job.id);
+
+  return NextResponse.json(toPayload(job));
+}
+
+export async function GET() {
+  const user = await requireAuth();
+  if (!user) {
+    return NextResponse.json({ error: "未登录" }, { status: 401 });
+  }
+
+  const jobs = await listActiveJobs(user.id);
+  return NextResponse.json({ items: jobs.map(toPayload) });
+}

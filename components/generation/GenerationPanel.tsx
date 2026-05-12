@@ -38,6 +38,7 @@ interface GenerationPanelProps {
 
 export interface GenerationPanelHandle {
   setEditImage: (imageBase64: string, prompt: string) => void;
+  setPrompt: (text: string) => void;
 }
 
 const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
@@ -81,6 +82,9 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
         setMode("image-to-image");
         setImages([imageBase64]);
         setPrompt(promptText);
+      },
+      setPrompt(text: string) {
+        setPrompt(text);
       },
     }));
 
