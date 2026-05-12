@@ -21,9 +21,11 @@ export default function HeaderNav() {
             key={l.href}
             href={l.href}
             className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
+              // Same metrics on both states — only colors change, so the
+              // overall nav width never shifts when switching pages.
+              "inline-flex items-center justify-center rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-150",
               active
-                ? "bg-accent text-accent-foreground shadow-sm"
+                ? "bg-accent text-accent-foreground"
                 : "text-foreground/65 hover:text-foreground",
             )}
           >

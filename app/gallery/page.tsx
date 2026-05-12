@@ -1,5 +1,3 @@
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import Gallery from "@/components/gallery/Gallery";
 
 export const metadata = {
@@ -9,20 +7,16 @@ export const metadata = {
 
 export default function GalleryPage() {
   return (
-    <>
-      <Header />
-      <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight">画廊</h1>
-            <p className="mt-1.5 text-sm text-foreground/60">
-              来自社区的 AI 画作 · 点开任意一张，一键复用提示词
-            </p>
-          </div>
-          <Gallery />
+    <main className="flex-1">
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">画廊</h1>
+          <p className="mt-1.5 text-sm text-foreground/60">
+            来自社区的 AI 画作 · 点开任意一张，一键复用提示词
+          </p>
         </div>
-      </main>
-      <Footer />
-    </>
+        <Gallery />
+      </div>
+    </main>
   );
 }

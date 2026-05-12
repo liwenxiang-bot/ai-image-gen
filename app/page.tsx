@@ -2,8 +2,6 @@
 
 import { useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import GenerationPanel from "@/components/generation/GenerationPanel";
 import type { GenerationPanelHandle } from "@/components/generation/GenerationPanel";
 import ImageGallery from "@/components/gallery/ImageGallery";
@@ -81,7 +79,6 @@ export default function Home() {
 
   return (
     <>
-      <Header />
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-8">
           <Suspense fallback={null}>
@@ -113,7 +110,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-      <Footer />
       <ToastContainer />
     </>
   );

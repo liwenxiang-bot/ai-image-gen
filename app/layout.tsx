@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { JobsProvider } from "@/hooks/useJobs";
 import JobsPanel from "@/components/jobs/JobsPanel";
+import GlobalHeader from "@/components/layout/GlobalHeader";
+import GlobalFooter from "@/components/layout/GlobalFooter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +49,9 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-background text-foreground">
         <JobsProvider>
+          <GlobalHeader />
           {children}
+          <GlobalFooter />
           <JobsPanel />
         </JobsProvider>
       </body>
