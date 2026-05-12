@@ -16,8 +16,11 @@ export const MAX_IMAGES = 4;
 
 export interface GenerationResult {
   success: true;
-  image: string; // base64
+  id: string;
+  imageUrl: string;
+  isPublic: boolean;
   revisedPrompt?: string;
+  createdAt: number;
 }
 
 export interface GenerationError {
@@ -30,10 +33,11 @@ export type GenerationResponse = GenerationResult | GenerationError;
 export interface HistoryItem {
   id: string;
   prompt: string;
-  imageBase64: string;
+  imageUrl: string;
   mode: GenerationMode;
   size: string;
   quality: string;
+  isPublic: boolean;
   revisedPrompt?: string;
   createdAt: number;
 }
