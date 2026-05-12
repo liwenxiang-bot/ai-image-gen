@@ -381,7 +381,7 @@ pm2 startup
 ### 7.4 本机自测
 
 ```bash
-curl -I http://127.0.0.1:3000
+curl -I http://127.0.0.1:3001
 # 应该返回 HTTP/1.1 200 OK（或 307 重定向到 /login）
 ```
 
@@ -423,7 +423,7 @@ server {
 
   # SSE 端点：必须关缓冲、长超时
   location /api/jobs/stream {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3001;
     proxy_http_version 1.1;
     proxy_set_header Connection "";
     proxy_buffering off;
@@ -437,7 +437,7 @@ server {
 
   # 微信回调：严格 5s 内必须响应
   location /api/wechat/callback {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3001;
     proxy_read_timeout 10s;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -446,7 +446,7 @@ server {
   }
 
   location / {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3001;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
