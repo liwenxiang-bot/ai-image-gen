@@ -6,8 +6,8 @@
 # 做的事：
 #   1. git pull (如果是 git 仓库)
 #   2. nvm use（读 .nvmrc）
-#   3. npm ci 装依赖
-#   4. prisma db push（同步 schema）
+#   3. npm ci 装依赖（仅在 package-lock.json 变化时执行）
+#   4. prisma db push（仅在 prisma/schema.prisma 变化时执行）
 #   5. next build
 #   6. pm2 reload ecosystem 优雅重启 web + worker
 #
@@ -46,19 +46,44 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
-# 3. git pull
+# 3. git pull（记录 pull 前的 lockfile / schema 哈希，下面据此决定要不要重装/同步）
+LOCKFILE_BEFORE=""
+SCHEMA_BEFORE=""
+if [[ -f package-lock.json ]]; then
+  LOCKFILE_BEFORE=$(sha256sum package-lock.json | awk '{print $1}')
+fi
+if [[ -f prisma/schema.prisma ]]; then
+  SCHEMA_BEFORE=$(sha256sum prisma/schema.prisma | awk '{print $1}')
+fi
+
 if [[ -d .git ]]; then
   echo "==> git pull"
   git pull --ff-only
 fi
 
-# 4. 装依赖（locked）
-echo "==> npm ci"
-npm ci
+# 4. 装依赖（只在 lockfile 变了 或 node_modules 缺失时跑）
+LOCKFILE_AFTER=""
+if [[ -f package-lock.json ]]; then
+  LOCKFILE_AFTER=$(sha256sum package-lock.json | awk '{print $1}')
+fi
+if [[ ! -d node_modules ]] || [[ "$LOCKFILE_BEFORE" != "$LOCKFILE_AFTER" ]]; then
+  echo "==> npm ci"
+  npm ci
+else
+  echo "==> 依赖未变化，跳过 npm ci"
+fi
 
-# 5. 同步数据库
-echo "==> prisma db push"
-npm run db:push
+# 5. 同步数据库（只在 schema 变了时跑）
+SCHEMA_AFTER=""
+if [[ -f prisma/schema.prisma ]]; then
+  SCHEMA_AFTER=$(sha256sum prisma/schema.prisma | awk '{print $1}')
+fi
+if [[ "$SCHEMA_BEFORE" != "$SCHEMA_AFTER" ]]; then
+  echo "==> prisma db push"
+  npm run db:push
+else
+  echo "==> schema 未变化，跳过 prisma db push"
+fi
 
 # 6. 构建
 echo "==> next build"
