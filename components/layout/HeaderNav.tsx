@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/", label: "生成" },
+  { href: "/", label: "作画" },
   { href: "/gallery", label: "画廊" },
 ];
 
