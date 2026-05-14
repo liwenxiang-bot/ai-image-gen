@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   X,
   Download,
@@ -8,10 +8,13 @@ import {
   Globe,
   Lock,
   Trash2,
+  Copy,
+  Check,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
+import ZoomableImage from "@/components/ui/ZoomableImage";
 import type { HistoryItem } from "@/lib/types";
 
 interface ImageModalProps {
@@ -37,20 +40,30 @@ export default function ImageModal({
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
   const touchStartX = useRef<number | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+
+  // Reset copy state when switching images
+  useEffect(() => {
+    setCopied(false);
+  }, [index]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
-      else if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
+      else if (!zoomed && e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
+      else if (!zoomed && e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     },
-    [onClose, onIndexChange, hasPrev, hasNext, index],
+    [onClose, onIndexChange, hasPrev, hasNext, index, zoomed],
   );
 
   const onTouchStart = (e: React.TouchEvent) => {
+    if (zoomed) return;
+    if (e.touches.length > 1) return;
     touchStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
+    if (zoomed) return;
     if (touchStartX.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
@@ -69,6 +82,16 @@ export default function ImageModal({
   }, [handleKeyDown]);
 
   if (!item) return null;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(item.prompt);
+    } catch {
+      // ignore
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
 
   const handleDownload = async () => {
     try {
@@ -117,6 +140,14 @@ export default function ImageModal({
 
         <div className="flex flex-1 flex-col gap-3 animate-fade-in">
           <div className="flex justify-end gap-2">
+            <Tooltip label={copied ? "已复制" : "复制提示词"} side="bottom">
+              <button
+                onClick={handleCopy}
+                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
+              >
+                {copied ? <Check className="h-5 w-5 text-green-300" /> : <Copy className="h-5 w-5" />}
+              </button>
+            </Tooltip>
             <Tooltip label={item.isPublic ? "设为私有" : "公开到画廊"} side="bottom">
               <button
                 onClick={() => onTogglePublic(item.id, !item.isPublic)}
@@ -155,13 +186,13 @@ export default function ImageModal({
             </Tooltip>
           </div>
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ZoomableImage
             key={item.id}
             src={item.imageUrl}
             alt={item.prompt}
-            className="max-h-[70vh] w-full rounded-xl object-contain"
-            crossOrigin="anonymous"
+            className="max-h-[70vh] w-full rounded-xl flex items-center justify-center"
+            imgClassName="max-h-[70vh] w-full object-contain"
+            onZoomChange={setZoomed}
           />
 
           <div className="rounded-xl bg-black/40 p-4 backdrop-blur-sm max-h-24 overflow-y-auto">
