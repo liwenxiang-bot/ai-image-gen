@@ -14,7 +14,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
-import ZoomableImage from "@/components/ui/ZoomableImage";
 import type { HistoryItem } from "@/lib/types";
 
 interface ImageModalProps {
@@ -41,7 +40,6 @@ export default function ImageModal({
   const hasNext = index < items.length - 1;
   const touchStartX = useRef<number | null>(null);
   const [copied, setCopied] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
 
   // Reset copy state when switching images
   useEffect(() => {
@@ -51,19 +49,17 @@ export default function ImageModal({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      else if (!zoomed && e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
-      else if (!zoomed && e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
+      else if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
+      else if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     },
-    [onClose, onIndexChange, hasPrev, hasNext, index, zoomed],
+    [onClose, onIndexChange, hasPrev, hasNext, index],
   );
 
   const onTouchStart = (e: React.TouchEvent) => {
-    if (zoomed) return;
     if (e.touches.length > 1) return;
     touchStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (zoomed) return;
     if (touchStartX.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
@@ -186,13 +182,13 @@ export default function ImageModal({
             </Tooltip>
           </div>
 
-          <ZoomableImage
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             key={item.id}
             src={item.imageUrl}
             alt={item.prompt}
-            className="max-h-[70vh] w-full rounded-xl flex items-center justify-center"
-            imgClassName="max-h-[70vh] w-full object-contain"
-            onZoomChange={setZoomed}
+            className="max-h-[70vh] w-full rounded-xl object-contain"
+            crossOrigin="anonymous"
           />
 
           <div className="rounded-xl bg-black/40 p-4 backdrop-blur-sm max-h-24 overflow-y-auto">

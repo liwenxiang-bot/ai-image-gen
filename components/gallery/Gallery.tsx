@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { avatarUrl } from "@/lib/avatar";
-import ZoomableImage from "@/components/ui/ZoomableImage";
 
 type GalleryItem = {
   id: string;
@@ -204,7 +203,6 @@ function PreviewModal({
 }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const item = items[index];
   const hasPrev = index > 0;
@@ -213,8 +211,8 @@ function PreviewModal({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      else if (!zoomed && e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
-      else if (!zoomed && e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
+      else if (e.key === "ArrowLeft" && hasPrev) onIndexChange(index - 1);
+      else if (e.key === "ArrowRight" && hasNext) onIndexChange(index + 1);
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -222,7 +220,7 @@ function PreviewModal({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [onClose, hasPrev, hasNext, index, onIndexChange, zoomed]);
+  }, [onClose, hasPrev, hasNext, index, onIndexChange]);
 
   // Reset copied state when switching images
   useEffect(() => {
@@ -230,12 +228,10 @@ function PreviewModal({
   }, [index]);
 
   const onTouchStart = (e: React.TouchEvent) => {
-    if (zoomed) return;
     if (e.touches.length > 1) return;
     touchStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (zoomed) return;
     if (touchStartX.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
@@ -303,13 +299,14 @@ function PreviewModal({
         />
 
         <div className="flex flex-1 items-center justify-center">
-          <ZoomableImage
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             key={item.id}
             src={item.imageUrl}
             alt={item.prompt}
-            className="max-h-[75vh] max-w-full rounded-xl shadow-2xl animate-fade-in flex items-center justify-center"
-            imgClassName="max-h-[75vh] max-w-full object-contain"
-            onZoomChange={setZoomed}
+            className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl animate-fade-in select-none"
+            crossOrigin="anonymous"
+            draggable={false}
           />
         </div>
 
