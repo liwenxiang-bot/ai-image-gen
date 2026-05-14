@@ -39,12 +39,6 @@ export default function ImageModal({
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
   const touchStartX = useRef<number | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  // Reset copy state when switching images
-  useEffect(() => {
-    setCopied(false);
-  }, [index]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -79,31 +73,6 @@ export default function ImageModal({
 
   if (!item) return null;
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(item.prompt);
-    } catch {
-      // ignore
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  };
-
-  const handleDownload = async () => {
-    try {
-      const res = await fetch(item.imageUrl, { mode: "cors" });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `ai-image-${item.id}.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // ignore
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -134,81 +103,15 @@ export default function ImageModal({
           onClick={() => onIndexChange(index - 1)}
         />
 
-        <div className="flex flex-1 flex-col gap-3 animate-fade-in">
-          <div className="flex justify-end gap-2">
-            <Tooltip label={copied ? "已复制" : "复制提示词"} side="bottom">
-              <button
-                onClick={handleCopy}
-                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
-              >
-                {copied ? <Check className="h-5 w-5 text-green-300" /> : <Copy className="h-5 w-5" />}
-              </button>
-            </Tooltip>
-            <Tooltip label={item.isPublic ? "设为私有" : "公开到画廊"} side="bottom">
-              <button
-                onClick={() => onTogglePublic(item.id, !item.isPublic)}
-                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
-              >
-                {item.isPublic ? (
-                  <Lock className="h-5 w-5" />
-                ) : (
-                  <Globe className="h-5 w-5" />
-                )}
-              </button>
-            </Tooltip>
-            <Tooltip label="继续改图" side="bottom">
-              <button
-                onClick={() => onEdit(item)}
-                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
-              >
-                <Pencil className="h-5 w-5" />
-              </button>
-            </Tooltip>
-            <Tooltip label="下载" side="bottom">
-              <button
-                onClick={handleDownload}
-                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-white/30 cursor-pointer"
-              >
-                <Download className="h-5 w-5" />
-              </button>
-            </Tooltip>
-            <Tooltip label="删除" side="bottom">
-              <button
-                onClick={() => onDelete(item.id)}
-                className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-red-500/70 cursor-pointer"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-            </Tooltip>
-          </div>
-
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={item.id}
-            src={item.imageUrl}
-            alt={item.prompt}
-            className="max-h-[70vh] w-full rounded-xl object-contain"
-            crossOrigin="anonymous"
-          />
-
-          <div className="rounded-xl bg-black/40 p-4 backdrop-blur-sm max-h-24 overflow-y-auto">
-            <p className="text-sm text-white/90">{item.prompt}</p>
-            <div className="mt-2 flex flex-wrap gap-3 text-xs text-white/60">
-              <span>{item.size}</span>
-              <span>{item.quality}</span>
-              <span>{new Date(item.createdAt).toLocaleString("zh-CN")}</span>
-              {item.isPublic && (
-                <span className="inline-flex items-center gap-1 text-accent">
-                  <Globe className="h-3 w-3" />
-                  已公开
-                </span>
-              )}
-              <span className="ml-auto text-white/40">
-                {index + 1} / {items.length}
-              </span>
-            </div>
-          </div>
-        </div>
+        <ModalContent
+          key={item.id}
+          item={item}
+          index={index}
+          total={items.length}
+          onEdit={onEdit}
+          onTogglePublic={onTogglePublic}
+          onDelete={onDelete}
+        />
 
         <NavArrow
           dir="next"
@@ -216,6 +119,134 @@ export default function ImageModal({
           peek={hasNext ? items[index + 1] : null}
           onClick={() => onIndexChange(index + 1)}
         />
+      </div>
+    </div>
+  );
+}
+
+function ModalContent({
+  item,
+  index,
+  total,
+  onEdit,
+  onTogglePublic,
+  onDelete,
+}: {
+  item: HistoryItem;
+  index: number;
+  total: number;
+  onEdit: (item: HistoryItem) => void;
+  onTogglePublic: (id: string, isPublic: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [mainLoaded, setMainLoaded] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(item.prompt);
+    } catch {
+      // ignore
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(item.imageUrl, { mode: "cors" });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ai-image-${item.id}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col gap-3 animate-fade-in">
+      <div className="flex justify-end gap-2">
+        <Tooltip label={copied ? "已复制" : "复制提示词"} side="bottom">
+          <button
+            onClick={handleCopy}
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
+          >
+            {copied ? <Check className="h-5 w-5 text-green-300" /> : <Copy className="h-5 w-5" />}
+          </button>
+        </Tooltip>
+        <Tooltip label={item.isPublic ? "设为私有" : "公开到画廊"} side="bottom">
+          <button
+            onClick={() => onTogglePublic(item.id, !item.isPublic)}
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
+          >
+            {item.isPublic ? (
+              <Lock className="h-5 w-5" />
+            ) : (
+              <Globe className="h-5 w-5" />
+            )}
+          </button>
+        </Tooltip>
+        <Tooltip label="继续改图" side="bottom">
+          <button
+            onClick={() => onEdit(item)}
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-accent/70 cursor-pointer"
+          >
+            <Pencil className="h-5 w-5" />
+          </button>
+        </Tooltip>
+        <Tooltip label="下载" side="bottom">
+          <button
+            onClick={handleDownload}
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-white/30 cursor-pointer"
+          >
+            <Download className="h-5 w-5" />
+          </button>
+        </Tooltip>
+        <Tooltip label="删除" side="bottom">
+          <button
+            onClick={() => onDelete(item.id)}
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-red-500/70 cursor-pointer"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className="relative w-full min-h-[50vh]">
+        {!mainLoaded && (
+          <div className="absolute inset-0 rounded-xl skeleton-shimmer" aria-hidden />
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.imageUrl}
+          alt={item.prompt}
+          className={`max-h-[70vh] w-full rounded-xl object-contain transition-opacity duration-300 ${mainLoaded ? "opacity-100" : "opacity-0"}`}
+          crossOrigin="anonymous"
+          onLoad={() => setMainLoaded(true)}
+          onError={() => setMainLoaded(true)}
+        />
+      </div>
+
+      <div className="rounded-xl bg-black/40 p-4 backdrop-blur-sm max-h-24 overflow-y-auto">
+        <p className="text-sm text-white/90">{item.prompt}</p>
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-white/60">
+          <span>{item.size}</span>
+          <span>{item.quality}</span>
+          <span>{new Date(item.createdAt).toLocaleString("zh-CN")}</span>
+          {item.isPublic && (
+            <span className="inline-flex items-center gap-1 text-accent">
+              <Globe className="h-3 w-3" />
+              已公开
+            </span>
+          )}
+          <span className="ml-auto text-white/40">
+            {index + 1} / {total}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -243,19 +274,29 @@ function NavArrow({
       className="group relative hidden h-24 w-16 shrink-0 items-center justify-center md:flex"
       aria-label={dir === "prev" ? "上一张" : "下一张"}
     >
-      {peek && (
-        <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40 transition-opacity group-hover:opacity-70">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={peek.imageUrl}
-            alt=""
-            className="h-full w-full object-cover blur-[1px]"
-            crossOrigin="anonymous"
-          />
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-      )}
+      {peek && <PeekImage key={peek.id} item={peek} />}
       <Icon className="relative h-6 w-6 text-white drop-shadow" />
     </button>
+  );
+}
+
+function PeekImage({ item }: { item: HistoryItem }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40 transition-opacity group-hover:opacity-70">
+      {!loaded && (
+        <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.imageUrl}
+        alt=""
+        className={`h-full w-full object-cover blur-[1px] transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        crossOrigin="anonymous"
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+      <div className="absolute inset-0 bg-black/40" />
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Download, Trash2, Maximize2, Pencil, Globe, Lock } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
 import type { HistoryItem } from "@/lib/types";
@@ -19,6 +20,8 @@ export default function ImageCard({
   onEdit,
   onTogglePublic,
 }: ImageCardProps) {
+  const [loaded, setLoaded] = useState(false);
+
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -40,14 +43,19 @@ export default function ImageCard({
       className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-muted transition-all duration-200 hover:shadow-lg hover:scale-[1.02]"
       onClick={() => onPreview(item)}
     >
-      <div className="aspect-square">
+      <div className="relative aspect-square">
+        {!loaded && (
+          <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
+        )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.imageUrl}
           alt={item.prompt}
-          className="h-full w-full object-cover"
+          className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
           loading="lazy"
           crossOrigin="anonymous"
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(true)}
         />
       </div>
 
