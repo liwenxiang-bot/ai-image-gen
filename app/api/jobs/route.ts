@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createJob, listActiveJobs, toPayload } from "@/lib/jobs";
 import { enqueueGenerate } from "@/lib/queue";
+import { QUOTA_COST, tryConsumeQuota } from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,19 @@ export async function POST(request: NextRequest) {
     ? (b.inputKeys.filter((s): s is string => typeof s === "string" && s.length > 0).slice(0, MAX_INPUTS))
     : [];
 
+  const cost = QUOTA_COST[mode];
+  const quota = await tryConsumeQuota(user.id, cost);
+  if (!quota.ok) {
+    return NextResponse.json(
+      {
+        error: `今日额度已用完（每日 ${quota.snapshot.limit} 次，${mode === "image-to-image" ? "图生图消耗 2 次" : "文生图消耗 1 次"}）`,
+        quota: quota.snapshot,
+        cost: quota.cost,
+      },
+      { status: 429 },
+    );
+  }
+
   const job = await createJob({
     userId: user.id,
     prompt,
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   await enqueueGenerate(job.id);
 
-  return NextResponse.json(toPayload(job));
+  return NextResponse.json({ ...toPayload(job), quota: quota.snapshot });
 }
 
 export async function GET() {

@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { publishJob, toPayload } from "@/lib/jobs";
 import { enqueueGenerate } from "@/lib/queue";
+import { QUOTA_COST, tryConsumeQuota, type QuotaMode } from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,20 @@ export async function POST(
     return NextResponse.json(
       { error: "图生图任务的输入图已清理，请在生成面板重新提交" },
       { status: 400 },
+    );
+  }
+
+  const mode = (job.mode === "image-to-image" ? "image-to-image" : "text-to-image") as QuotaMode;
+  const cost = QUOTA_COST[mode];
+  const quota = await tryConsumeQuota(user.id, cost);
+  if (!quota.ok) {
+    return NextResponse.json(
+      {
+        error: `今日额度已用完（每日 ${quota.snapshot.limit} 次）`,
+        quota: quota.snapshot,
+        cost: quota.cost,
+      },
+      { status: 429 },
     );
   }
 

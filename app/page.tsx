@@ -9,6 +9,7 @@ import type { ActiveJob } from "@/components/gallery/ImageGallery";
 import ToastContainer, { toast } from "@/components/ui/Toast";
 import { useJobs } from "@/hooks/useJobs";
 import { useHistory } from "@/hooks/useHistory";
+import { useQuota } from "@/hooks/useQuota";
 import type { GenerationParams, HistoryItem } from "@/lib/types";
 
 export default function Home() {
@@ -16,6 +17,7 @@ export default function Home() {
   const galleryRef = useRef<HTMLDivElement>(null);
   const { jobs, submitJob, retryJob, cancelJob, onCompleted, onFailed } = useJobs();
   const { history, removeItem, setItemVisibility, reload: reloadHistory } = useHistory();
+  const { quota, refresh: refreshQuota } = useQuota();
 
   // When a job finishes, reload history once and notify the user.
   useEffect(() => {
@@ -42,12 +44,14 @@ export default function Home() {
         images: params.images,
       });
       toast("任务已提交，可随时切换页面", "success");
+      void refreshQuota();
       setTimeout(() => {
         galleryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     } catch (err) {
       const message = err instanceof Error ? err.message : "提交失败";
       toast(message, "error");
+      void refreshQuota();
     }
   };
 
@@ -86,7 +90,7 @@ export default function Home() {
           </Suspense>
 
           <div className="mb-12">
-            <GenerationPanel ref={panelRef} onGenerate={handleGenerate} isLoading={false} />
+            <GenerationPanel ref={panelRef} onGenerate={handleGenerate} isLoading={false} quota={quota} />
           </div>
 
           <div ref={galleryRef}>
@@ -97,9 +101,12 @@ export default function Home() {
               onEdit={handleEdit}
               onTogglePublic={handleTogglePublic}
               onRetryJob={(id) => {
-                retryJob(id).catch((err) =>
-                  toast(err instanceof Error ? err.message : "重试失败", "error"),
-                );
+                retryJob(id)
+                  .then(() => refreshQuota())
+                  .catch((err) => {
+                    toast(err instanceof Error ? err.message : "重试失败", "error");
+                    void refreshQuota();
+                  });
               }}
               onCancelJob={(id) => {
                 cancelJob(id).catch((err) =>

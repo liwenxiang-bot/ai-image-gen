@@ -34,6 +34,12 @@ function shuffleAndPick<T>(arr: T[], count: number): T[] {
 interface GenerationPanelProps {
   onGenerate: (params: GenerationParams) => void;
   isLoading: boolean;
+  quota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    cost: { "text-to-image": number; "image-to-image": number };
+  } | null;
 }
 
 export interface GenerationPanelHandle {
@@ -42,7 +48,7 @@ export interface GenerationPanelHandle {
 }
 
 const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
-  ({ onGenerate, isLoading }, ref) => {
+  ({ onGenerate, isLoading, quota }, ref) => {
     const [mode, setMode] = useState<GenerationMode>("text-to-image");
     const [prompt, setPrompt] = useState("");
     const [images, setImages] = useState<string[]>([]);
@@ -93,9 +99,13 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
       setIsMac(navigator.platform.toUpperCase().includes("MAC"));
     }, []);
 
+    const cost = quota ? quota.cost[mode] : 1;
+    const insufficient = quota ? quota.remaining < cost : false;
+
     const canSubmit =
       prompt.trim().length > 0 &&
       (mode === "text-to-image" || images.length > 0) &&
+      !insufficient &&
       !isLoading;
 
     const handleSubmit = () => {
@@ -169,7 +179,26 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
               onQualityChange={setQuality}
               disabled={isLoading}
             />
-            <div className="w-full sm:w-auto">
+            <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
+              {quota && (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span>今日剩余</span>
+                  <span
+                    className={
+                      "tabular-nums font-medium " +
+                      (insufficient
+                        ? "text-red-500"
+                        : quota.remaining <= 2
+                          ? "text-amber-500"
+                          : "text-foreground/80")
+                    }
+                  >
+                    {quota.remaining}/{quota.limit}
+                  </span>
+                  <span className="text-foreground/40">·</span>
+                  <span>本次消耗 {cost} 次</span>
+                </div>
+              )}
               <Button
                 variant="primary"
                 size="md"
@@ -179,7 +208,11 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
                 className="w-full sm:w-auto"
               >
                 <Wand2 className="h-4 w-4" />
-                {isLoading ? "生成中..." : "生成图片"}
+                {isLoading
+                  ? "生成中..."
+                  : insufficient
+                    ? "今日额度已用完"
+                    : "生成图片"}
               </Button>
             </div>
           </div>

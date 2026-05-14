@@ -9,12 +9,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  openid    String   @unique @db.VarChar(64)
-  nickname  String?  @db.VarChar(64)
-  createdAt DateTime @default(now())
-  images    Image[]
-  jobs      Job[]
+  id           String        @id @default(cuid())
+  openid       String        @unique @db.VarChar(64)
+  nickname     String?       @db.VarChar(64)
+  createdAt    DateTime      @default(now())
+  images       Image[]
+  jobs         Job[]
+  dailyQuotas  DailyQuota[]
 
   @@map("users")
 }
@@ -57,4 +58,18 @@ model Job {
   @@index([userId, createdAt])
   @@index([status])
   @@map("jobs")
+}
+
+/// 每用户每自然日（北京时间 UTC+8）的额度消耗。
+/// dayKey 形如 "2026-05-13"，用 +8 偏移计算。
+model DailyQuota {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayKey    String   @db.VarChar(10)
+  used      Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, dayKey])
+  @@map("daily_quotas")
 }
