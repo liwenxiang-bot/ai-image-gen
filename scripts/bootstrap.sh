@@ -39,16 +39,18 @@ systemctl restart redis-server
 echo "==> 安装 certbot"
 apt-get install -y certbot python3-certbot-nginx
 
-echo "==> 为 $REAL_USER 安装 nvm + Node 22"
-sudo -u "$REAL_USER" bash <<'EOF'
+echo "==> 为 $REAL_USER 安装 nvm + Node (读项目 .nvmrc)"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+sudo -u "$REAL_USER" PROJECT_DIR="$PROJECT_DIR" bash <<'EOF'
 set -euo pipefail
 if [[ ! -d "$HOME/.nvm" ]]; then
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
 fi
 export NVM_DIR="$HOME/.nvm"
 . "$NVM_DIR/nvm.sh"
-nvm install 22
-nvm alias default 22
+cd "$PROJECT_DIR"
+nvm install         # 读 .nvmrc 装对应版本
+nvm alias default "$(cat .nvmrc)"
 npm install -g pm2
 EOF
 
