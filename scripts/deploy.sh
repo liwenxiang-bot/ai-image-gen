@@ -24,16 +24,20 @@ cd "$ROOT_DIR"
 
 echo "==> 项目目录：$ROOT_DIR"
 
-# 1. 加载 nvm
+# 1. 加载 nvm（nvm.sh 用了未定义变量，临时关掉 set -u）
 if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   export NVM_DIR="$HOME/.nvm"
+  set +u
   # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
+  set -u
 fi
 
 if [[ -f .nvmrc ]]; then
   echo "==> nvm use"
+  set +u
   nvm use
+  set -u
 fi
 
 # 2. 检查 .env
