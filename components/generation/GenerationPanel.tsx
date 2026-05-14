@@ -32,7 +32,7 @@ function shuffleAndPick<T>(arr: T[], count: number): T[] {
 }
 
 interface GenerationPanelProps {
-  onGenerate: (params: GenerationParams) => void;
+  onGenerate: (params: GenerationParams) => void | Promise<void>;
   isLoading: boolean;
   quota?: {
     used: number;
@@ -102,27 +102,35 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
     const cost = quota ? quota.cost[mode] : 1;
     const insufficient = quota ? quota.remaining < cost : false;
 
+    const [submitting, setSubmitting] = useState(false);
+
     const canSubmit =
       prompt.trim().length > 0 &&
       (mode === "text-to-image" || images.length > 0) &&
       !insufficient &&
+      !submitting &&
       !isLoading;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
       if (!canSubmit) return;
-      onGenerate({
-        prompt: prompt.trim(),
-        mode,
-        images: mode === "image-to-image" ? images : undefined,
-        size,
-        quality,
-      });
+      setSubmitting(true);
+      try {
+        await onGenerate({
+          prompt: prompt.trim(),
+          mode,
+          images: mode === "image-to-image" ? images : undefined,
+          size,
+          quality,
+        });
+      } finally {
+        setSubmitting(false);
+      }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSubmit) {
         e.preventDefault();
-        handleSubmit();
+        void handleSubmit();
       }
     };
 
@@ -204,15 +212,17 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
                 size="md"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                loading={isLoading}
+                loading={isLoading || submitting}
                 className="w-full sm:w-auto"
               >
                 <Wand2 className="h-4 w-4" />
-                {isLoading
-                  ? "生成中..."
-                  : insufficient
-                    ? "今日额度已用完"
-                    : "生成图片"}
+                {submitting
+                  ? "提交中..."
+                  : isLoading
+                    ? "生成中..."
+                    : insufficient
+                      ? "今日额度已用完"
+                      : "生成图片"}
               </Button>
             </div>
           </div>
