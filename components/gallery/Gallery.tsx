@@ -299,15 +299,7 @@ function PreviewModal({
         />
 
         <div className="flex flex-1 items-center justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={item.id}
-            src={item.imageUrl}
-            alt={item.prompt}
-            className="max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl animate-fade-in select-none"
-            crossOrigin="anonymous"
-            draggable={false}
-          />
+          <StageImage key={item.id} item={item} />
         </div>
 
         <NavArrow
@@ -389,20 +381,51 @@ function NavArrow({
       className="group relative hidden h-24 w-16 shrink-0 items-center justify-center md:flex"
       aria-label={dir === "prev" ? "上一张" : "下一张"}
     >
-      {peek && (
-        <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40 transition-opacity group-hover:opacity-70">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={peek.imageUrl}
-            alt=""
-            className="h-full w-full object-cover blur-[1px]"
-            crossOrigin="anonymous"
-          />
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-      )}
+      {peek && <PeekImage key={peek.id} item={peek} />}
       <Icon className="relative h-6 w-6 text-white drop-shadow" />
     </button>
+  );
+}
+
+function StageImage({ item }: { item: GalleryItem }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative flex w-full items-center justify-center min-h-[60vh]">
+      {!loaded && (
+        <div className="absolute inset-0 m-auto h-[60vh] w-full max-w-3xl rounded-xl animate-pulse bg-white/5" aria-hidden />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.imageUrl}
+        alt={item.prompt}
+        className={`max-h-[75vh] max-w-full rounded-xl object-contain shadow-2xl select-none transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        crossOrigin="anonymous"
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
+function PeekImage({ item }: { item: GalleryItem }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40 transition-opacity group-hover:opacity-70">
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-white/5" aria-hidden />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.imageUrl}
+        alt=""
+        className={`h-full w-full object-cover blur-[1px] transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        crossOrigin="anonymous"
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+      />
+      <div className="absolute inset-0 bg-black/40" />
+    </div>
   );
 }
 
