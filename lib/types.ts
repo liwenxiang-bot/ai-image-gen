@@ -13,6 +13,8 @@ export interface GenerationParams {
 }
 
 export const MAX_IMAGES = 4;
+export const MAX_INPUT_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_INPUT_IMAGE_MB = MAX_INPUT_IMAGE_BYTES / (1024 * 1024);
 
 export interface GenerationResult {
   success: true;

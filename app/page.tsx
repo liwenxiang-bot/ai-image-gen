@@ -156,8 +156,7 @@ function blobToBase64(blob: Blob): Promise<string> {
         reject(new Error("read failed"));
         return;
       }
-      const comma = result.indexOf(",");
-      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      resolve(result);
     };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);

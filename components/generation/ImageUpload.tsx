@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Upload, X, Plus } from "lucide-react";
-import { MAX_IMAGES } from "@/lib/types";
+import { MAX_IMAGES, MAX_INPUT_IMAGE_BYTES, MAX_INPUT_IMAGE_MB } from "@/lib/types";
 
 interface ImageUploadProps {
   images: string[];
@@ -11,20 +11,30 @@ interface ImageUploadProps {
   maxCount?: number;
 }
 
-const MAX_BYTES = 20 * 1024 * 1024;
+type ReadImageResult =
+  | { ok: true; dataUrl: string }
+  | { ok: false; message: string };
 
-function readAsBase64(file: File): Promise<string | null> {
+function imageSrc(image: string): string {
+  return image.startsWith("data:") ? image : `data:image/png;base64,${image}`;
+}
+
+function readImage(file: File): Promise<ReadImageResult> {
   return new Promise((resolve) => {
-    if (!file.type.startsWith("image/") || file.size > MAX_BYTES) {
-      resolve(null);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      resolve({ ok: false, message: "仅支持 PNG、JPG、WebP 图片" });
+      return;
+    }
+    if (file.size > MAX_INPUT_IMAGE_BYTES) {
+      resolve({ ok: false, message: `单张图片最大 ${MAX_INPUT_IMAGE_MB}MB` });
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve(result.split(",")[1]);
+      resolve({ ok: true, dataUrl: result });
     };
-    reader.onerror = () => resolve(null);
+    reader.onerror = () => resolve({ ok: false, message: "图片读取失败，请重试" });
     reader.readAsDataURL(file);
   });
 }
@@ -37,6 +47,7 @@ export default function ImageUpload({
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   const remaining = maxCount - images.length;
 
@@ -44,8 +55,12 @@ export default function ImageUpload({
     async (files: File[]) => {
       if (remaining <= 0 || files.length === 0) return;
       const slice = files.slice(0, remaining);
-      const results = await Promise.all(slice.map(readAsBase64));
-      const valid = results.filter((s): s is string => s !== null);
+      const results = await Promise.all(slice.map(readImage));
+      const valid = results
+        .filter((result): result is { ok: true; dataUrl: string } => result.ok)
+        .map((result) => result.dataUrl);
+      const invalid = results.find((result): result is { ok: false; message: string } => !result.ok);
+      setMessage(invalid?.message ?? null);
       if (valid.length > 0) onImagesChange([...images, ...valid]);
     },
     [images, onImagesChange, remaining]
@@ -97,7 +112,8 @@ export default function ImageUpload({
       >
         <Upload className="h-6 w-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">拖拽或点击上传参考图片（最多 {maxCount} 张）</p>
-        <p className="text-xs text-muted-foreground">支持 PNG、JPG、WebP，单张最大 20MB</p>
+        <p className="text-xs text-muted-foreground">支持 PNG、JPG、WebP，单张最大 {MAX_INPUT_IMAGE_MB}MB</p>
+        {message && <p className="text-xs text-red-500">{message}</p>}
         {fileInput}
       </div>
     );
@@ -116,7 +132,7 @@ export default function ImageUpload({
         {images.map((img, idx) => (
           <div key={idx} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
             <img
-              src={`data:image/png;base64,${img}`}
+              src={imageSrc(img)}
               alt={`Reference ${idx + 1}`}
               className="h-full w-full object-cover"
             />
@@ -142,6 +158,7 @@ export default function ImageUpload({
           </button>
         )}
       </div>
+      {message && <p className="mt-2 text-xs text-red-500">{message}</p>}
       {fileInput}
     </div>
   );
