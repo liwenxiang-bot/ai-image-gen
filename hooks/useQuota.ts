@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 export type QuotaState = {
   used: number;
@@ -15,6 +16,7 @@ const REFRESH_INTERVAL_MS = 60 * 1000;
 export function useQuota() {
   const [quota, setQuota] = useState<QuotaState | null>(null);
   const [loading, setLoading] = useState(false);
+  const { redirectToLogin } = useAuthRedirect();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -22,6 +24,7 @@ export function useQuota() {
       const res = await fetch("/api/quota", { cache: "no-store" });
       if (!res.ok) {
         setQuota(null);
+        if (res.status === 401) redirectToLogin();
         return;
       }
       const data = (await res.json()) as QuotaState;
@@ -31,12 +34,15 @@ export function useQuota() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
-    void refresh();
-    const t = setInterval(refresh, REFRESH_INTERVAL_MS);
-    return () => clearInterval(t);
+    const initial = window.setTimeout(() => void refresh(), 0);
+    const interval = window.setInterval(() => void refresh(), REFRESH_INTERVAL_MS);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+    };
   }, [refresh]);
 
   return { quota, loading, refresh };

@@ -202,9 +202,10 @@ function PreviewModal({
   onIndexChange: (i: number) => void;
 }) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
   const item = items[index];
+  const copied = copiedId === item.id;
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
 
@@ -221,11 +222,6 @@ function PreviewModal({
       document.body.style.overflow = "";
     };
   }, [onClose, hasPrev, hasNext, index, onIndexChange]);
-
-  // Reset copied state when switching images
-  useEffect(() => {
-    setCopied(false);
-  }, [index]);
 
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length > 1) return;
@@ -246,8 +242,10 @@ function PreviewModal({
     } catch {
       // ignore
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    setCopiedId(item.id);
+    setTimeout(() => {
+      setCopiedId((current) => (current === item.id ? null : current));
+    }, 1800);
   };
 
   const handleDownload = async () => {

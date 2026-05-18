@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 export type JobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 
@@ -51,27 +51,39 @@ const JobsContext = createContext<JobsContextValue | null>(null);
 const ACTIVE = (s: JobStatus) => s === "queued" || s === "running";
 
 export function JobsProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const [jobs, setJobs] = useState<JobPayload[]>([]);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const completedListeners = useRef<Set<Listener>>(new Set());
   const failedListeners = useRef<Set<Listener>>(new Set());
   const seenTerminalIds = useRef<Set<string>>(new Set());
   const esRef = useRef<EventSource | null>(null);
+  const { isAuthOptional, redirectToLogin, throwAuthExpired } = useAuthRedirect();
 
-  // Skip auth probe entirely on routes where we know the user isn't logged in.
-  const skipAuth = pathname?.startsWith("/login") ?? false;
+  // Skip auth probe entirely on routes where auth is optional.
+  const skipAuth = isAuthOptional;
+
+  const handleUnauthorized = useCallback((): never => {
+    setAuthed(false);
+    return throwAuthExpired();
+  }, [throwAuthExpired]);
 
   // Auth probe: silent. Only authed users connect to SSE.
   useEffect(() => {
     if (skipAuth) {
-      setAuthed(false);
-      return;
+      const timer = window.setTimeout(() => setAuthed(false), 0);
+      return () => window.clearTimeout(timer);
     }
     fetch("/api/auth/me", { cache: "no-store" })
-      .then((r) => setAuthed(r.ok))
+      .then((r) => {
+        if (r.ok) {
+          setAuthed(true);
+          return;
+        }
+        setAuthed(false);
+        if (r.status === 401) redirectToLogin();
+      })
       .catch(() => setAuthed(false));
-  }, [skipAuth]);
+  }, [redirectToLogin, skipAuth]);
 
   const mergeJob = useCallback((incoming: JobPayload) => {
     setJobs((prev) => {
@@ -185,6 +197,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ images: input.images }),
         });
         if (!up.ok) {
+          if (up.status === 401) handleUnauthorized();
           const errData = await up.json().catch(() => ({}));
           throw new Error(errData?.error || "上传输入图失败");
         }
@@ -204,6 +217,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
         }),
       });
       if (!res.ok) {
+        if (res.status === 401) handleUnauthorized();
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData?.error || "创建任务失败");
       }
@@ -211,13 +225,14 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       mergeJob(job);
       return job;
     },
-    [mergeJob],
+    [handleUnauthorized, mergeJob],
   );
 
   const retryJob = useCallback(
     async (id: string) => {
       const res = await fetch(`/api/jobs/${id}/retry`, { method: "POST" });
       if (!res.ok) {
+        if (res.status === 401) handleUnauthorized();
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData?.error || "重试失败");
       }
@@ -226,19 +241,20 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       seenTerminalIds.current.delete(id);
       mergeJob(job);
     },
-    [mergeJob],
+    [handleUnauthorized, mergeJob],
   );
 
   const cancelJob = useCallback(
     async (id: string) => {
       const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
       if (!res.ok) {
+        if (res.status === 401) handleUnauthorized();
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData?.error || "取消失败");
       }
       setJobs((prev) => prev.filter((j) => j.id !== id));
     },
-    [],
+    [handleUnauthorized],
   );
 
   const onCompleted = useCallback((fn: Listener) => {

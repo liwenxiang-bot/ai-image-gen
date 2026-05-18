@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createSubscriber } from "@/lib/redis";
 import { JOB_CHANNEL, listActiveJobs, toPayload } from "@/lib/jobs";
@@ -8,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const KEEPALIVE_INTERVAL_MS = 25_000;
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   const user = await requireAuth();
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
