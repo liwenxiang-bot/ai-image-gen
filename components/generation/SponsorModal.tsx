@@ -49,7 +49,7 @@ export default function SponsorModal({ open, onClose }: SponsorModalProps) {
           </div>
 
           <p className="text-sm leading-relaxed text-muted-foreground">
-            本项目由 <span className="font-medium text-foreground">玖亿AI</span> 赞助。一站式 AI 聚合站，深度集成 ChatGPT、Claude、Gemini、Grok 等镜像，按量计费、无需翻墙。
+            本项目由 <span className="font-medium text-foreground">玖亿AI</span> 赞助。一站式 AI 聚合站，深度集成 ChatGPT、Claude、Gemini、Grok 等镜像，ChatGPT 镜像 Image 2 画图，不限量使用。
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
