@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useImperativeHandle, forwardRef, useEffect } from "react";
+import { useState, useImperativeHandle, forwardRef, useEffect, useRef } from "react";
 import ModeToggle from "./ModeToggle";
 import PromptInput from "./PromptInput";
 import ImageUpload from "./ImageUpload";
 import SettingsBar from "./SettingsBar";
+import SponsorModal from "./SponsorModal";
 import Button from "@/components/ui/Button";
 import { Wand2, RefreshCw } from "lucide-react";
 import type { GenerationMode, ImageSize, ImageQuality, GenerationParams } from "@/lib/types";
@@ -101,6 +102,24 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
 
     const cost = quota ? quota.cost[mode] : 1;
     const insufficient = quota ? quota.remaining < cost : false;
+
+    const [sponsorOpen, setSponsorOpen] = useState(false);
+    const sponsorShownRef = useRef(false);
+
+    useEffect(() => {
+      if (!insufficient || sponsorShownRef.current) return;
+      if (typeof window !== "undefined" && sessionStorage.getItem("sponsor-shown") === "1") {
+        sponsorShownRef.current = true;
+        return;
+      }
+      sponsorShownRef.current = true;
+      try {
+        sessionStorage.setItem("sponsor-shown", "1");
+      } catch {
+        // ignore
+      }
+      setSponsorOpen(true);
+    }, [insufficient]);
 
     const [submitting, setSubmitting] = useState(false);
 
@@ -210,8 +229,8 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
               <Button
                 variant="primary"
                 size="md"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
+                onClick={insufficient ? () => setSponsorOpen(true) : handleSubmit}
+                disabled={insufficient ? false : !canSubmit}
                 loading={isLoading || submitting}
                 className="w-full sm:w-auto"
               >
@@ -227,6 +246,8 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
             </div>
           </div>
         </div>
+
+        <SponsorModal open={sponsorOpen} onClose={() => setSponsorOpen(false)} />
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export const DAILY_FREE_QUOTA = 50;
+export const DAILY_FREE_QUOTA = 10;
 
 export const QUOTA_COST = {
   "text-to-image": 1,
