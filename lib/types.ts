@@ -1,6 +1,14 @@
 export type GenerationMode = "text-to-image" | "image-to-image";
 
-export type ImageSize = "1024x1024" | "1024x1536" | "1536x1024" | "auto";
+export type ImageSize =
+  | "1024x1024"
+  | "1024x1536"
+  | "1536x1024"
+  | "2048x2048"
+  | "2048x1152"
+  | "3840x2160"
+  | "2160x3840"
+  | "auto";
 
 export type ImageQuality = "low" | "medium" | "high" | "auto";
 
