@@ -12,10 +12,11 @@ model User {
   id           String        @id @default(cuid())
   openid       String        @unique @db.VarChar(64)
   nickname     String?       @db.VarChar(64)
+  credits      Int           @default(0) // 永久积分余额
   createdAt    DateTime      @default(now())
   images       Image[]
   jobs         Job[]
-  dailyQuotas  DailyQuota[]
+  orders       Order[]
 
   @@map("users")
 }
@@ -50,6 +51,8 @@ model Job {
   inputKeys    Json?
   imageId      String?
   errorMessage String?   @db.Text
+  cost         Int       @default(0) // 本次扣减的积分，用于失败退还
+  refunded     Boolean   @default(false) // 失败是否已退还（幂等标记）
   startedAt    DateTime?
   finishedAt   DateTime?
   createdAt    DateTime  @default(now())
@@ -60,16 +63,20 @@ model Job {
   @@map("jobs")
 }
 
-/// 每用户每自然日（北京时间 UTC+8）的额度消耗。
-/// dayKey 形如 "2026-05-13"，用 +8 偏移计算。
-model DailyQuota {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dayKey    String   @db.VarChar(10)
-  used      Int      @default(0)
-  updatedAt DateTime @updatedAt
+/// 易支付订单（彩虹/派坊系）。一笔订单对应一次积分购买。
+model Order {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outTradeNo  String    @unique @db.VarChar(64) // 传给易支付的商户订单号
+  tradeNo     String?   @db.VarChar(64) // 易支付返回的平台订单号
+  packageId   String    @db.VarChar(32) // 套餐档位 id
+  amount      String    @db.VarChar(16) // 金额（元），字符串避免浮点
+  credits     Int // 该套餐到账的积分
+  status      String    @default("pending") @db.VarChar(16) // pending / paid
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
 
-  @@unique([userId, dayKey])
-  @@map("daily_quotas")
+  @@index([userId, createdAt])
+  @@map("orders")
 }

@@ -50,6 +50,7 @@ export async function createJob(input: {
   mode: string;
   size: string;
   quality: string;
+  cost: number;
   inputKeys?: string[];
 }): Promise<DbJob> {
   return prisma.job.create({
@@ -60,6 +61,8 @@ export async function createJob(input: {
       mode: input.mode,
       size: input.size,
       quality: input.quality,
+      cost: input.cost,
+      refunded: false,
       inputKeys: input.inputKeys && input.inputKeys.length > 0 ? input.inputKeys : undefined,
     },
   });

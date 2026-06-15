@@ -7,6 +7,7 @@ import {
   publishJob,
   toPayload,
 } from "../../lib/jobs";
+import { refundCredits } from "../../lib/quota";
 
 const MAX_IMAGES = 4;
 
@@ -192,6 +193,14 @@ export async function processGenerateJob(jobId: string): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "处理失败";
     await markFailed(jobId, message);
+    // 失败退还积分。用 refunded 标记原子翻转保证幂等：retry 再失败也只退一次。
+    const claimed = await prisma.job.updateMany({
+      where: { id: jobId, refunded: false },
+      data: { refunded: true },
+    });
+    if (claimed.count === 1 && job.cost > 0) {
+      await refundCredits(job.userId, job.cost);
+    }
   } finally {
     // Cleanup temp inputs regardless of outcome.
     for (const key of inputKeys) {

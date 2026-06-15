@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { publishJob, toPayload } from "@/lib/jobs";
 import { generateQueue } from "@/lib/queue";
+import { refundCredits } from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -61,6 +62,17 @@ export async function DELETE(
     where: { id },
     data: { status: "cancelled", finishedAt: new Date() },
   });
+
+  // 退还已扣积分。refunded 原子翻转保证幂等：若 worker 已在跑并随后失败，
+  // 其退款分支会因 refunded 已为 true 而跳过，不会重复退。
+  const claimed = await prisma.job.updateMany({
+    where: { id, refunded: false },
+    data: { refunded: true },
+  });
+  if (claimed.count === 1 && job.cost > 0) {
+    await refundCredits(user.id, job.cost);
+  }
+
   await publishJob(user.id, toPayload(updated));
 
   return new NextResponse(null, { status: 204 });

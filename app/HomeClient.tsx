@@ -90,6 +90,9 @@ export default function HomeClient() {
           <Suspense fallback={null}>
             <PromptFromQuery panelRef={panelRef} />
           </Suspense>
+          <Suspense fallback={null}>
+            <PayReturnHandler onPaid={refreshQuota} />
+          </Suspense>
 
           <div className="mb-12">
             <GenerationPanel ref={panelRef} onGenerate={handleGenerate} isLoading={false} quota={quota} />
@@ -112,10 +115,12 @@ export default function HomeClient() {
                   });
               }}
               onCancelJob={(id) => {
-                cancelJob(id).catch((err) => {
-                  if (isAuthExpiredError(err)) return;
-                  toast(err instanceof Error ? err.message : "取消失败", "error");
-                });
+                cancelJob(id)
+                  .then(() => refreshQuota())
+                  .catch((err) => {
+                    if (isAuthExpiredError(err)) return;
+                    toast(err instanceof Error ? err.message : "取消失败", "error");
+                  });
               }}
             />
           </div>
@@ -147,6 +152,67 @@ function PromptFromQuery({
       window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams, panelRef]);
+
+  return null;
+}
+
+/**
+ * 支付收银台 return_url 跳回后（?pay=done&out_trade_no=xxx），轮询订单状态确认积分
+ * 到账（异步回调可能略晚于跳转），到账后刷新积分余额并提示，再清理 URL。
+ */
+function PayReturnHandler({ onPaid }: { onPaid: () => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("pay") !== "done") return;
+    const outTradeNo = searchParams.get("out_trade_no");
+
+    const cleanUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("pay");
+      url.searchParams.delete("out_trade_no");
+      url.searchParams.delete("trade_no");
+      window.history.replaceState({}, "", url.toString());
+    };
+
+    let cancelled = false;
+    let attempts = 0;
+
+    const poll = async () => {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        if (outTradeNo) {
+          const res = await fetch(
+            `/api/pay/status?out_trade_no=${encodeURIComponent(outTradeNo)}`,
+            { cache: "no-store" },
+          );
+          const data = await res.json();
+          if (res.ok && data.status === "paid") {
+            onPaid();
+            toast("支付成功，积分已到账！", "success");
+            cleanUrl();
+            return;
+          }
+        }
+      } catch {
+        // ignore, will retry
+      }
+      if (attempts >= 6) {
+        // 回调可能还没到，刷新一次让用户看到最新余额，并清理 URL
+        onPaid();
+        cleanUrl();
+        return;
+      }
+      window.setTimeout(poll, 1500);
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return null;
 }

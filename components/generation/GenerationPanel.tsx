@@ -36,9 +36,7 @@ interface GenerationPanelProps {
   onGenerate: (params: GenerationParams) => void | Promise<void>;
   isLoading: boolean;
   quota?: {
-    used: number;
-    limit: number;
-    remaining: number;
+    credits: number;
     cost: { "text-to-image": number; "image-to-image": number };
   } | null;
 }
@@ -101,7 +99,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
     }, []);
 
     const cost = quota ? quota.cost[mode] : 1;
-    const insufficient = quota ? quota.remaining < cost : false;
+    const insufficient = quota ? quota.credits < cost : false;
 
     const [sponsorOpen, setSponsorOpen] = useState(false);
     const sponsorShownRef = useRef(false);
@@ -209,21 +207,21 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
             <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:items-end">
               {quota && (
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <span>今日剩余</span>
+                  <span>积分余额</span>
                   <span
                     className={
                       "tabular-nums font-medium " +
                       (insufficient
                         ? "text-red-500"
-                        : quota.remaining <= 2
+                        : quota.credits <= 5
                           ? "text-amber-500"
                           : "text-foreground/80")
                     }
                   >
-                    {quota.remaining}/{quota.limit}
+                    {quota.credits}
                   </span>
                   <span className="text-foreground/40">·</span>
-                  <span>本次消耗 {cost} 次</span>
+                  <span>本次消耗 {cost} 积分</span>
                 </div>
               )}
               <Button
@@ -240,7 +238,7 @@ const GenerationPanel = forwardRef<GenerationPanelHandle, GenerationPanelProps>(
                   : isLoading
                     ? "生成中..."
                     : insufficient
-                      ? "今日额度已用完"
+                      ? "积分不足，去购买"
                       : "生成图片"}
               </Button>
             </div>

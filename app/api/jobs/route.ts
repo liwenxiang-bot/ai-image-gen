@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { createJob, listActiveJobs, toPayload } from "@/lib/jobs";
 import { enqueueGenerate } from "@/lib/queue";
-import { QUOTA_COST, tryConsumeQuota } from "@/lib/quota";
+import { QUOTA_COST, tryConsumeCredits } from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -43,15 +43,15 @@ export async function POST(request: NextRequest) {
     : [];
 
   const cost = QUOTA_COST[mode];
-  const quota = await tryConsumeQuota(user.id, cost);
-  if (!quota.ok) {
+  const credits = await tryConsumeCredits(user.id, cost);
+  if (!credits.ok) {
     return NextResponse.json(
       {
-        error: `今日额度已用完（每日 ${quota.snapshot.limit} 次，${mode === "image-to-image" ? "图生图消耗 2 次" : "文生图消耗 1 次"}）`,
-        quota: quota.snapshot,
-        cost: quota.cost,
+        error: `积分不足（${mode === "image-to-image" ? "图生图消耗 2 积分" : "文生图消耗 1 积分"}），请购买积分`,
+        quota: credits.snapshot,
+        cost,
       },
-      { status: 429 },
+      { status: 402 },
     );
   }
 
@@ -61,12 +61,13 @@ export async function POST(request: NextRequest) {
     mode,
     size,
     quality,
+    cost,
     inputKeys,
   });
 
   await enqueueGenerate(job.id);
 
-  return NextResponse.json({ ...toPayload(job), quota: quota.snapshot });
+  return NextResponse.json({ ...toPayload(job), quota: credits.snapshot });
 }
 
 export async function GET() {

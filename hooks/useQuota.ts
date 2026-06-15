@@ -4,10 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 export type QuotaState = {
-  used: number;
-  limit: number;
-  remaining: number;
-  dayKey: string;
+  credits: number;
   cost: { "text-to-image": number; "image-to-image": number };
 };
 

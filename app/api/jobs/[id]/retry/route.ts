@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { publishJob, toPayload } from "@/lib/jobs";
 import { enqueueGenerate } from "@/lib/queue";
-import { QUOTA_COST, tryConsumeQuota, type QuotaMode } from "@/lib/quota";
+import { QUOTA_COST, tryConsumeCredits, type QuotaMode } from "@/lib/quota";
 
 export const runtime = "nodejs";
 
@@ -42,15 +42,15 @@ export async function POST(
 
   const mode = (job.mode === "image-to-image" ? "image-to-image" : "text-to-image") as QuotaMode;
   const cost = QUOTA_COST[mode];
-  const quota = await tryConsumeQuota(user.id, cost);
-  if (!quota.ok) {
+  const credits = await tryConsumeCredits(user.id, cost);
+  if (!credits.ok) {
     return NextResponse.json(
       {
-        error: `今日额度已用完（每日 ${quota.snapshot.limit} 次）`,
-        quota: quota.snapshot,
-        cost: quota.cost,
+        error: "积分不足，请购买积分",
+        quota: credits.snapshot,
+        cost,
       },
-      { status: 429 },
+      { status: 402 },
     );
   }
 
@@ -59,6 +59,8 @@ export async function POST(
     data: {
       status: "queued",
       errorMessage: null,
+      cost,
+      refunded: false,
       startedAt: null,
       finishedAt: null,
     },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
 import { buildReplyXml, parseXml, verifySignature } from "@/lib/wechat";
+import { SIGNUP_BONUS } from "@/lib/quota";
 
 export const runtime = "nodejs";
 export const maxDuration = 5;
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     await prisma.user.upsert({
       where: { openid: msg.FromUserName },
-      create: { openid: msg.FromUserName },
+      create: { openid: msg.FromUserName, credits: SIGNUP_BONUS },
       update: {},
     });
     // Bind code to openid. Reuse remaining TTL bucket (5 min ceiling is fine).
