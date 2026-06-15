@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Sparkles, Loader2 } from "lucide-react";
 import { PACKAGES } from "@/lib/epay";
 import { toast } from "@/components/ui/Toast";
@@ -12,6 +13,11 @@ interface SponsorModalProps {
 
 export default function SponsorModal({ open, onClose }: SponsorModalProps) {
   const [buying, setBuying] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -26,7 +32,7 @@ export default function SponsorModal({ open, onClose }: SponsorModalProps) {
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const handleBuy = async (packageId: string) => {
     if (buying) return;
@@ -50,7 +56,7 @@ export default function SponsorModal({ open, onClose }: SponsorModalProps) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={onClose}
@@ -97,6 +103,7 @@ export default function SponsorModal({ open, onClose }: SponsorModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
