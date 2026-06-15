@@ -35,11 +35,11 @@ export function getEpayConfig(): EpayConfig {
   return { apiUrl, pid, key, notifyUrl, returnUrl, payType };
 }
 
-/** 套餐档位 —— 前后端共用的单一数据源。 */
+/** 套餐档位 —— 前后端共用的单一数据源。定价：1 积分 = 0.1 元（生一次图 1 积分）。 */
 export const PACKAGES = [
-  { id: "p1", amount: "6", credits: 100, label: "100 积分" },
-  { id: "p2", amount: "18", credits: 300, label: "300 积分" },
-  { id: "p3", amount: "30", credits: 600, label: "600 积分" },
+  { id: "p1", amount: "6", credits: 60, label: "60 积分" },
+  { id: "p2", amount: "18", credits: 180, label: "180 积分" },
+  { id: "p3", amount: "30", credits: 300, label: "300 积分" },
 ] as const;
 
 export type Package = (typeof PACKAGES)[number];
