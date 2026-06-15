@@ -81,6 +81,10 @@ fi
 if [[ "$SCHEMA_BEFORE" != "$SCHEMA_AFTER" ]]; then
   echo "==> prisma db push"
   npm run db:push
+  # db push 不会重新生成 client，必须显式 generate，否则 next build 的
+  # 类型检查仍用旧 client（缺新字段会编译失败）。
+  echo "==> prisma generate"
+  npm run db:generate
 else
   echo "==> schema 未变化，跳过 prisma db push"
 fi
