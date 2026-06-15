@@ -216,7 +216,7 @@ function JobPlaceholder({
         </div>
       </div>
 
-      {!failed && onCancel && (
+      {job.status === "queued" && onCancel && (
         <button
           type="button"
           onClick={onCancel}

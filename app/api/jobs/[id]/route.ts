@@ -45,6 +45,15 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 });
   }
 
+  // 生成中（running）禁止取消：图已开始绘制，OpenAI 费用已产生，必须画完。
+  // 只有排队中（queued）的任务可以取消。
+  if (job.status === "running") {
+    return NextResponse.json(
+      { error: "图片正在生成中，无法取消" },
+      { status: 409 },
+    );
+  }
+
   // Try to remove the BullMQ job if it's still queued (best-effort; if it's
   // already picked up by a worker, the worker will continue but we still mark
   // cancelled on the DB so the result is discarded by the client).
