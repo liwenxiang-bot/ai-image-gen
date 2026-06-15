@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, ExternalLink, Sparkles, Loader2 } from "lucide-react";
+import { X, Sparkles, Loader2 } from "lucide-react";
 import { PACKAGES } from "@/lib/epay";
 import { toast } from "@/components/ui/Toast";
 
@@ -94,21 +94,6 @@ export default function SponsorModal({ open, onClose }: SponsorModalProps) {
                 </span>
               </button>
             ))}
-          </div>
-
-          <div className="rounded-xl border border-border bg-muted/40 p-3">
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              本项目由 <span className="font-medium text-foreground">玖亿AI</span> 赞助。一站式 AI 聚合站，深度集成 ChatGPT、Claude、Gemini、Grok 等镜像，ChatGPT 镜像 Image 2 画图，不限量使用。
-            </p>
-            <a
-              href="https://www.9e.lv/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
-            >
-              去玖亿AI看看
-              <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
         </div>
       </div>
