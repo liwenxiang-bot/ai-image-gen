@@ -3,6 +3,7 @@ import { Palette } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import UserMenu from "@/components/layout/UserMenu";
 import HeaderNav from "@/components/layout/HeaderNav";
+import CreditsButton from "@/components/layout/CreditsButton";
 
 export default function Header() {
   return (
@@ -16,6 +17,7 @@ export default function Header() {
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           <HeaderNav />
+          <CreditsButton />
           <ThemeToggle />
           <UserMenu />
         </div>
